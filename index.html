@@ -1,120 +1,85 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Vocabulary Fill-in-the-Blank Test</title>
+  <meta charset="UTF-8" />
+  <title>Vocabulary Quiz</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 30px;
-    }
-    h1 {
-      text-align: center;
-    }
-    .section {
-      margin-top: 30px;
-    }
-    .question {
-      margin-bottom: 15px;
-    }
-    input {
-      font-size: 16px;
-      padding: 5px;
-      width: 250px;
-    }
-    .correct {
-      color: green;
-    }
-    .incorrect {
-      color: red;
-    }
-    button.speak {
-      margin-left: 10px;
-      padding: 3px 6px;
-      font-size: 14px;
-    }
+    body { font-family: sans-serif; padding: 20px; }
+    button { margin: 5px; padding: 10px; }
+    .quiz-block { margin-top: 20px; }
+    input { padding: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h1>Vocabulary Fill-in-the-Blank Test</h1>
-  <p>Click 🔊 to hear pronunciation. Click "Check Answers" to verify your responses.</p>
-
-  <div class="section">
-    <h2>Part A: Translate from Chinese to English</h2>
-    <div id="ch2en"></div>
+  <h1>Vocabulary Quiz</h1>
+  <div id="nav"></div>
+  <div class="quiz-block">
+    <h3 id="question"></h3>
+    <input id="answer" placeholder="Type your answer" />
+    <button onclick="checkAnswer()">Check</button>
+    <p id="feedback"></p>
   </div>
-
-  <div class="section">
-    <h2>Part B: Translate from English to Chinese</h2>
-    <div id="en2ch"></div>
-  </div>
-
-  <button onclick="checkAnswers()">Check Answers</button>
 
   <script>
-    const vocab = [
-      ["書包", "school bag"], ["書", "book"], ["黃色", "yellow"], ["藍色", "blue"], ["黑色", "black"],
-      ["咖啡色", "brown"], ["紫色", "purple"], ["帽子", "hat"], ["外套", "coat"], ["洋裝", "dress"],
-      ["襯衫", "shirt"], ["狗", "dog"], ["鼠", "rat"], ["母牛", "cow"], ["綿羊", "sheep"],
-      ["雞", "chicken"], ["餓的", "hungry"], ["生氣的", "angry"], ["吵鬧的", "noisy"], ["想睡的", "sleep"],
-      ["鉛筆盒", "pencil case"], ["紅色", "red"], ["綠色", "green"], ["粉色", "pink"], ["白色", "white"],
-      ["橘色", "orange"], ["顏色", "color"], ["鴨舌帽", "cap"], ["夾克", "jacket"], ["裙子", "skirt"],
-      ["T 衫", "T-shirt"], ["貓", "cat"], ["兔子", "rabbit"], ["馬", "horse"], ["豬", "pig"],
-      ["鴨子", "duck"], ["口渴的", "thirsty"], ["懶惰的", "lazy"], ["安靜的", "quiet"], ["疲累的", "tired"],
-      ["男孩", "boy"], ["女孩", "girl"], ["學生", "student"], ["奶奶／外婆", "grandmother"],
-      ["爸爸", "father"], ["姐妹", "sister"], ["阿姨／姑姑／嬸嬸／媽媽", "aunt"], ["堂／表兄弟姊妹", "cousin"],
-      ["二", "two"], ["四", "four"], ["六", "six"], ["八", "eight"], ["十", "ten"],
-      ["男人", "man"], ["老師", "teacher"], ["女人", "woman"], ["爺爺／外公", "grandfather"],
-      ["媽媽", "mother"], ["兄弟", "brother"], ["叔叔／舅舅／媽媽", "uncle"], ["一", "one"],
-      ["三", "three"], ["五", "five"], ["七", "seven"], ["九", "nine"], ["瘦的", "thin"],
-      ["圓胖的", "chubby"], ["矮的", "short"], ["快樂的", "happy"], ["年輕的", "young"],
-      ["年老的", "old"], ["可愛的", "cute"], ["鉛筆", "pencil"], ["橡皮擦", "eraser"],
-      ["尺", "ruler"], ["原子筆", "pen"], ["書桌", "desk"], ["椅子", "chair"]
-    ];
-
-    let maleVoice = null;
-    window.speechSynthesis.onvoiceschanged = () => {
-      const voices = window.speechSynthesis.getVoices();
-      maleVoice = voices.find(v => v.name.toLowerCase().includes('english') && v.gender !== 'female' && v.name.toLowerCase().includes('male')) || voices.find(v => v.name.toLowerCase().includes('english') && v.name.toLowerCase().includes('david')) || voices[0];
-    };
+    const lists = ["A1", "A2", "B1", "B2", "B3"];
+    let currentList = "A1";
+    let words = [];
+    let current = 0;
 
     function speak(text) {
-      const msg = new SpeechSynthesisUtterance(text);
-      msg.pitch = 1.2;
-      msg.rate = 1.1;
-      if (maleVoice) msg.voice = maleVoice;
-      window.speechSynthesis.speak(msg);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      speechSynthesis.speak(utterance);
     }
 
-    function createQuestion(el, prompt, answer, reverse = false) {
-      const div = document.createElement('div');
-      div.className = 'question';
-      const speakButton = `<button class='speak' onclick='speak("${reverse ? prompt : answer}")'>🔊</button>`;
-      div.innerHTML = `${prompt}: <input type='text' data-answer='${answer}'> ${speakButton}`;
-      el.appendChild(div);
+    function loadList(name) {
+      currentList = name;
+      fetch(name + ".json")
+        .then(res => res.json())
+        .then(data => {
+          words = data;
+          current = 0;
+          showQuestion();
+        });
     }
 
-    const ch2enContainer = document.getElementById('ch2en');
-    const en2chContainer = document.getElementById('en2ch');
+    function showQuestion() {
+      const word = words[current];
+      const mode = Math.floor(Math.random() * 3);
+      document.getElementById("answer").value = "";
+      document.getElementById("feedback").textContent = "";
 
-    vocab.forEach(pair => {
-      createQuestion(ch2enContainer, pair[0], pair[1]);
-      createQuestion(en2chContainer, pair[1], pair[0], true);
-    });
-
-    function checkAnswers() {
-      document.querySelectorAll('input').forEach(input => {
-        const correct = input.getAttribute('data-answer').trim().toLowerCase();
-        const user = input.value.trim().toLowerCase();
-        input.classList.remove('correct', 'incorrect');
-        if (user === correct) {
-          input.classList.add('correct');
-        } else {
-          input.classList.add('incorrect');
-        }
-      });
+      if (mode === 0) {
+        document.getElementById("question").textContent = `中翻英：${word.zh}`;
+        document.getElementById("question").dataset.answer = word.en.toLowerCase();
+      } else if (mode === 1) {
+        document.getElementById("question").textContent = `英翻中：${word.en}`;
+        document.getElementById("question").dataset.answer = word.zh;
+      } else {
+        document.getElementById("question").textContent = `聽音寫單字：🔊`;
+        speak(word.en);
+        document.getElementById("question").dataset.answer = word.en.toLowerCase();
+      }
     }
+
+    function checkAnswer() {
+      const userAns = document.getElementById("answer").value.trim().toLowerCase();
+      const correctAns = document.getElementById("question").dataset.answer;
+      if (userAns === correctAns) {
+        document.getElementById("feedback").textContent = "✅ 正確！";
+      } else {
+        document.getElementById("feedback").textContent = `❌ 錯誤，正確答案是：${correctAns}`;
+      }
+      current = (current + 1) % words.length;
+      setTimeout(showQuestion, 1500);
+    }
+
+    // 建立按鈕
+    document.getElementById("nav").innerHTML = lists.map(list =>
+      `<button onclick="loadList('${list}')">${list}</button>`
+    ).join("");
+
+    loadList("A1");
   </script>
 </body>
 </html>
