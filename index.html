@@ -1,85 +1,66 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Vocabulary Quiz</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    button { margin: 5px; padding: 10px; }
-    .quiz-block { margin-top: 20px; }
-    input { padding: 5px; font-size: 16px; }
+    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+    .question { margin-bottom: 1em; }
+    .correct { color: green; }
+    .incorrect { color: red; }
   </style>
 </head>
 <body>
   <h1>Vocabulary Quiz</h1>
-  <div id="nav"></div>
-  <div class="quiz-block">
-    <h3 id="question"></h3>
-    <input id="answer" placeholder="Type your answer" />
-    <button onclick="checkAnswer()">Check</button>
-    <p id="feedback"></p>
-  </div>
+  <h2>English to Chinese</h2>
+  <div id="en-to-zh"></div>
+
+  <h2>Chinese to English</h2>
+  <div id="zh-to-en"></div>
 
   <script>
-    const lists = ["A1", "A2", "B1", "B2", "B3"];
-    let currentList = "A1";
-    let words = [];
-    let current = 0;
+    const vocab = [('boy', '男孩'), ('girl', '女孩'), ('student', '學生'), ('teacher', '老師'), ('man', '男人'), ('woman', '女人'), ('grandmother', '奶奶/外婆'), ('grandfather', '爺爺/外公'), ('father', '爸爸'), ('mother', '媽媽'), ('sister', '姐妹'), ('brother', '兄弟'), ('aunt', '阿姨/嬸嬸/舅媽'), ('uncle', '叔叔/舅舅/姨丈'), ('cousin', '堂/表兄弟姊妹'), ('one', '一'), ('two', '二'), ('three', '三'), ('four', '四'), ('five', '五'), ('six', '六'), ('seven', '七'), ('eight', '八'), ('nine', '九'), ('ten', '十'), ('thin', '瘦的'), ('chubby', '圓胖的'), ('sad', '難過的'), ('short', '矮的'), ('tall', '高的'), ('happy', '快樂的'), ('young', '年輕的'), ('old', '年老的'), ('cute', '可愛的'), ('pencil', '鉛筆'), ('eraser', '橡皮擦'), ('ruler', '尺'), ('pen', '原子筆'), ('desk', '書桌'), ('chair', '椅子')];
 
-    function speak(text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      speechSynthesis.speak(utterance);
-    }
+    const createInput = (label, answer, lang, speakText) => {
+      const div = document.createElement('div');
+      div.className = 'question';
+      const span = document.createElement('span');
+      span.textContent = label + ': ';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Answer here';
+      const result = document.createElement('span');
+      const btn = document.createElement('button');
+      btn.textContent = '🔊';
+      btn.onclick = () => {
+        const msg = new SpeechSynthesisUtterance(speakText);
+        msg.lang = lang;
+        msg.voice = speechSynthesis.getVoices().find(v => v.lang.startsWith(lang) && v.name.includes("Male"));
+        speechSynthesis.speak(msg);
+      };
+      input.oninput = () => {
+        if (input.value.trim() === answer) {
+          result.textContent = ' ✅';
+          result.className = 'correct';
+        } else {
+          result.textContent = ' ❌';
+          result.className = 'incorrect';
+        }
+      };
+      div.append(span, input, result, btn);
+      return div;
+    };
 
-    function loadList(name) {
-      currentList = name;
-      fetch(name + ".json")
-        .then(res => res.json())
-        .then(data => {
-          words = data;
-          current = 0;
-          showQuestion();
-        });
-    }
+    const enToZh = document.getElementById('en-to-zh');
+    vocab.forEach(([en, zh]) => {
+      enToZh.appendChild(createInput(en, zh, 'zh-TW', en));
+    });
 
-    function showQuestion() {
-      const word = words[current];
-      const mode = Math.floor(Math.random() * 3);
-      document.getElementById("answer").value = "";
-      document.getElementById("feedback").textContent = "";
-
-      if (mode === 0) {
-        document.getElementById("question").textContent = `中翻英：${word.zh}`;
-        document.getElementById("question").dataset.answer = word.en.toLowerCase();
-      } else if (mode === 1) {
-        document.getElementById("question").textContent = `英翻中：${word.en}`;
-        document.getElementById("question").dataset.answer = word.zh;
-      } else {
-        document.getElementById("question").textContent = `聽音寫單字：🔊`;
-        speak(word.en);
-        document.getElementById("question").dataset.answer = word.en.toLowerCase();
-      }
-    }
-
-    function checkAnswer() {
-      const userAns = document.getElementById("answer").value.trim().toLowerCase();
-      const correctAns = document.getElementById("question").dataset.answer;
-      if (userAns === correctAns) {
-        document.getElementById("feedback").textContent = "✅ 正確！";
-      } else {
-        document.getElementById("feedback").textContent = `❌ 錯誤，正確答案是：${correctAns}`;
-      }
-      current = (current + 1) % words.length;
-      setTimeout(showQuestion, 1500);
-    }
-
-    // 建立按鈕
-    document.getElementById("nav").innerHTML = lists.map(list =>
-      `<button onclick="loadList('${list}')">${list}</button>`
-    ).join("");
-
-    loadList("A1");
+    const zhToEn = document.getElementById('zh-to-en');
+    vocab.forEach(([en, zh]) => {
+      zhToEn.appendChild(createInput(zh, en, 'en-US', en));
+    });
   </script>
 </body>
 </html>
